@@ -1,17 +1,30 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify, make_response, after_this_request, Response
 import pandas as pd
 import pickle
 import datetime
+import json
+from flask_cors import CORS, cross_origin
+
 
 model = pickle.load(open('demo.pkl', 'rb'))
 
 app = Flask(__name__)
 
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
+
 @app.route('/predict',methods=['POST'])
+@cross_origin()
 def predict():
 #    print(request.form)
     year = datetime.date.today().year
-    crop = int(request.form.get('crop'))
+
+    # print(request.data)
+    data = json.dumps(request.data.decode('utf-8'))
+    print(data)
+    crop = int(data[-3])
+
+    # crop = int(request.form.get('crop'))
 #    population = request.form.get('population')
 #    demand = request.form.get('demand')
 
@@ -26,8 +39,12 @@ def predict():
     print(demand_per_person)
 
     population = model.predict([[year]])[0]
-    
-    total_demand = ((population*demand_per_person)/1000).round(4)
+
+    demand = ((population*demand_per_person)/1000).round(4)
 #    print(po)
-    response = {"total_demand": total_demand}
+
+
+
+    response = jsonify({"total_demand": demand})
+    # response.headers.add("Access-Control-Allow-Origin", 'http://localhost:3000')
     return response
